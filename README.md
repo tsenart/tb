@@ -1,40 +1,53 @@
-# Throttle
+# Th
 
 This package provides a generic implementation of the "Token bucket"
 algorithm where the handling of non-conformity is left to the user.
 
 ## Status: Alpha
 
-## Example
+## Example: Throttled echo server
 ```go
 package main
 
 import (
-  "time"
-
-  "github.com/tsenart/throttle"
+  "github.com/tsenart/th"
+  "io"
+  "log"
+  "net"
 )
 
 func main() {
-  rate := 100 // per second
-  bucket := throttle.NewBucket(rate)
-  work := make(chan int)
-
-  go func() {
-    for i := 0; i < 100; i++ {
-      work <- i
-    }
-  }()
-
-  for item := range work {
-    if out := bucket.Put(1); out != 1 {
-      // handle non-conformant item
-      time.Sleep(50 * time.Millisecond)
-      work <- item
-      continue
-    }
-    // handle conformant item 
+  ln, err := net.Listen("tcp", ":6666")
+  if err != nil {
+    log.Fatal(err)
   }
+
+  for {
+    conn, err := ln.Accept()
+    if err != nil {
+      log.Fatal(err)
+    }
+    go echo(conn)
+  }
+}
+
+func echo(conn net.Conn) {
+  defer conn.Close()
+
+  host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+  if err != nil {
+    panic(err)
+  }
+  log.Printf("Echoing payload from %s:%s", host, port)
+
+  // Throttle to 10 connection per second from the same host
+  // Handle non-conformity by dropping the connection
+  if out := th.Throttle(host, 1, 10); out < 1 {
+    log.Printf("Throttled %s", host)
+    return
+  }
+
+  io.Copy(conn, conn)
 }
 ```
 
