@@ -1,4 +1,4 @@
-# Th
+# tb
 
 This package provides a generic implementation of the "Token bucket"
 algorithm where the handling of non-conformity is left to the user.
@@ -10,7 +10,7 @@ algorithm where the handling of non-conformity is left to the user.
 package main
 
 import (
-  "github.com/tsenart/th"
+  "github.com/tsenart/tb"
   "io"
   "log"
   "net"
@@ -42,7 +42,7 @@ func echo(conn net.Conn) {
 
   // Throttle to 10 connection per second from the same host
   // Handle non-conformity by dropping the connection
-  if out := th.Throttle(host, 1, 10); out < 1 {
+  if out := tb.Throttle(host, 1, 10); out < 1 {
     log.Printf("Throttled %s", host)
     return
   }
