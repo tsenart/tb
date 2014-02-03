@@ -1,12 +1,19 @@
-# tb
+# Token Bucket (tb)
 
 This package provides a generic implementation of the "Token bucket"
 algorithm where the handling of non-conformity is left to the user.
+![Wikipedia page](http://en.wikipedia.org/wiki/Token_bucket)
 
-## Status: Alpha
 
-## Example: Throttled echo server
+## Install
+```shell
+$ go get github.com/tsenart/tb
+```
+
+## Usage
 ```go
+// A an example of an echo server which throttles each remote ip to 10
+// connections per second.
 package main
 
 import (
@@ -17,37 +24,35 @@ import (
 )
 
 func main() {
-  ln, err := net.Listen("tcp", ":6666")
-  if err != nil {
-    log.Fatal(err)
-  }
+	ln, err := net.Listen("tcp", ":6789")
+	if err != nil {
+		log.Fatal(err)
+	}
 
-  for {
-    conn, err := ln.Accept()
-    if err != nil {
-      log.Fatal(err)
-    }
-    go echo(conn)
-  }
-}
+	echo := func(conn net.Conn) {
+		defer conn.Close()
 
-func echo(conn net.Conn) {
-  defer conn.Close()
+		host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
+		if err != nil {
+			panic(err)
+		}
+		// Throttle to 10 connection per second from the same host
+		// Handle non-conformity by dropping the connection
+		if out := tb.Throttle(host, 1, 10); out < 1 {
+			log.Printf("Throttled %s", host)
+			return
+		}
+		log.Printf("Echoing payload from %s:%s", host, port)
+		io.Copy(conn, conn)
+	}
 
-  host, port, err := net.SplitHostPort(conn.RemoteAddr().String())
-  if err != nil {
-    panic(err)
-  }
-  log.Printf("Echoing payload from %s:%s", host, port)
-
-  // Throttle to 10 connection per second from the same host
-  // Handle non-conformity by dropping the connection
-  if out := tb.Throttle(host, 1, 10); out < 1 {
-    log.Printf("Throttled %s", host)
-    return
-  }
-
-  io.Copy(conn, conn)
+	for {
+		conn, err := ln.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		go echo(conn)
+	}
 }
 ```
 
