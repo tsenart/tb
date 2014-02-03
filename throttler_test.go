@@ -20,27 +20,9 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 	}
 }
 
-func BenchmarkThrottle_allocsConcurrent(b *testing.B) {
-	keys := make([]string, 10000)
-	for i := 0; i < len(keys); i++ {
-		keys[i] = strconv.Itoa(i)
-	}
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		go Throttle(keys[i%(len(keys)-1)], 1, 1000)
-	}
-}
-
 func BenchmarkThrottle_sequential(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		Throttle("1", 1, 1000)
-	}
-}
-
-func BenchmarkThrottle_concurrent(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		go Throttle("1", 1, 1000)
 	}
 }
 

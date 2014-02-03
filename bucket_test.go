@@ -90,12 +90,3 @@ func BenchmarkBucket_Take_sequential(b *testing.B) {
 		bucket.Take(1)
 	}
 }
-
-func BenchmarkBucket_Take_concurrent(b *testing.B) {
-	bucket := NewBucket(1000)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		go bucket.Take(1)
-	}
-}
