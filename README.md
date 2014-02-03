@@ -13,7 +13,7 @@ $ go get github.com/tsenart/tb
 
 ## Usage
 ```go
-// A an example of an echo server which throttles each remote ip to 10
+// An example of an echo server which throttles each remote ip to 10
 // connections per second.
 package main
 
