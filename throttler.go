@@ -5,7 +5,7 @@ import (
 )
 
 // DefaultThrottler is an utility instance of Throttler used by Throttle.
-var DefaultThrottler = &Throttler{buckets: map[string]*Bucket{}}
+var DefaultThrottler = NewThrottler()
 
 // Throttle throttles a quantity 'in' to the specified 'rate' per second,
 // with a Bucket keyed by key, returning the permitted quantity.
