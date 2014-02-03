@@ -38,7 +38,7 @@ func (b *Bucket) Take(n int64) int64 {
 	}
 }
 
-// Stop halts the addition of new tokens to the buckets. It is not thread-safe.
+// Stop halts the addition of new tokens to the bucket. It is not thread-safe.
 func (b Bucket) Stop() {
 	b.ticker.Stop()
 }
