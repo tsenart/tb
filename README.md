@@ -2,7 +2,7 @@
 
 This package provides a generic lock-free implementation of the "Token bucket"
 algorithm where the handling of non-conformity is left to the user.
-Read more about in this [Wikipedia page](http://en.wikipedia.org/wiki/Token_bucket).
+Read more about it in this [Wikipedia page](http://en.wikipedia.org/wiki/Token_bucket).
 ![Image](http://sardes.inrialpes.fr/~krakowia/MW-Book/Chapters/QoS/Chapters/QoS/Figs/bucket.gif)
 
 
