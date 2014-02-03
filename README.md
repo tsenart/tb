@@ -29,6 +29,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	th := tb.NewThrottler()
 
 	echo := func(conn net.Conn) {
 		defer conn.Close()
@@ -39,7 +40,7 @@ func main() {
 		}
 		// Throttle to 10 connection per second from the same host
 		// Handle non-conformity by dropping the connection
-		if out := tb.Throttle(host, 1, 10); out < 1 {
+		if out := th.Throttle(host, 1, 10); out < 1 {
 			log.Printf("Throttled %s", host)
 			return
 		}

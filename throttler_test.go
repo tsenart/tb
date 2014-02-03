@@ -31,6 +31,7 @@ func ExampleThrottle(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	th := NewThrottler()
 
 	echo := func(conn net.Conn) {
 		defer conn.Close()
@@ -41,7 +42,7 @@ func ExampleThrottle(t *testing.T) {
 		}
 		// Throttle to 10 connection per second from the same host
 		// Handle non-conformity by dropping the connection
-		if out := Throttle(host, 1, 10); out < 1 {
+		if out := th.Throttle(host, 1, 10); out < 1 {
 			log.Printf("Throttled %s", host)
 			return
 		}
