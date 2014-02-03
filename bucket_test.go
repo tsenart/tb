@@ -10,9 +10,8 @@ import (
 func TestNewBucket(t *testing.T) {
 	t.Parallel()
 
-	if b := NewBucket(10); b.capacity != 10 || b.tokens != 10 {
-		t.Errorf("Wrong capacity or tokens. Want 10, Got [%d, %d]",
-			b.capacity, b.tokens)
+	if b := NewBucket(10); b.tokens != 10 {
+		t.Errorf("Wrong number of tokens. Want 10, Got %d", b.tokens)
 	}
 }
 
