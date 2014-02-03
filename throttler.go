@@ -43,13 +43,3 @@ func (t *Throttler) Throttle(key string, in, rate int64) (out int64) {
 
 	return b.Take(in)
 }
-
-// Stop halts the addition of new tokens to all buckets. It is not thread-safe.
-func (t *Throttler) Stop() {
-	t.mu.RLock()
-	defer t.mu.RUnlock()
-
-	for _, b := range t.buckets {
-		b.Stop()
-	}
-}

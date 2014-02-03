@@ -19,7 +19,6 @@ func TestBucket_Take_single(t *testing.T) {
 	t.Parallel()
 
 	b := NewBucket(10)
-	defer b.Stop()
 
 	ex := [...]int64{5, 5, 1, 1, 5, 4, 1, 0}
 	for i := 0; i < len(ex)-1; i += 2 {
@@ -33,7 +32,6 @@ func TestBucket_Take_multi(t *testing.T) {
 	t.Parallel()
 
 	b := NewBucket(10)
-	defer b.Stop()
 
 	exs := [2][]int64{{4, 4, 2, 2, 1, 1}, {2, 2, 1, 1, 1, 0}}
 	for i := 0; i < 2; i++ {
@@ -55,7 +53,6 @@ func TestBucket_Take_throughput(t *testing.T) {
 	}
 
 	b := NewBucket(1000)
-	defer b.Stop()
 
 	var out int64
 	takes := make(chan int64)
