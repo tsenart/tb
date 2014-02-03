@@ -16,10 +16,13 @@ func NewBucket(c int64) *Bucket {
 	return b
 }
 
-// Take will take n tokens out of the bucket. If there aren't enough
-// tokens, the difference is returned. Otherwise n is returned.
+// Take will attempt to take n tokens out of the bucket.
+// If available tokens == 0, nothing will be taken.
+// If n <= available tokens, n tokens will be taken.
+// If n > available tokens, all available tokens will be taken.
+//
 // This method is thread-safe.
-func (b *Bucket) Take(n int64) int64 {
+func (b *Bucket) Take(n int64) (taken int64) {
 	for {
 		if tokens := atomic.LoadInt64(&b.tokens); tokens == 0 {
 			return 0
