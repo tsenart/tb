@@ -1,7 +1,6 @@
 package tb
 
 import (
-	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -33,7 +32,7 @@ func TestBucket_Take_multi(t *testing.T) {
 
 	b := NewBucket(10)
 
-	exs := [2][]int64{{4, 4, 2, 2, 1, 1}, {2, 2, 1, 1, 1, 0}}
+	exs := [2][]int64{{4, 4, 2, 2}, {2, 2, 1, 1}}
 	for i := 0; i < 2; i++ {
 		go func(i int) {
 			for j := 0; j < len(exs[i])-1; j += 2 {
@@ -47,32 +46,20 @@ func TestBucket_Take_multi(t *testing.T) {
 
 func TestBucket_Take_throughput(t *testing.T) {
 	t.Parallel()
-
 	if testing.Short() {
 		t.Skip("Skipping test in short mode")
 	}
 
 	b := NewBucket(1000)
+	atomic.StoreInt64(&b.tokens, 0)
 
 	var out int64
-	takes := make(chan int64)
-
-	for i := 0; i < runtime.NumCPU(); i++ {
-		go func() {
-			for n := range takes {
-				atomic.AddInt64(&out, b.Take(n))
-			}
-		}()
-	}
-
 	ts := time.Now()
-	atomic.StoreInt64(&b.tokens, 0)
 	for time.Now().Before(ts.Add(1 * time.Second)) {
-		takes <- 1
+		out += b.Take(1)
 	}
-	close(takes)
 
-	// The time scheduler isn't as precise as we need so we need a small tolerance
+	// The time scheduler isn't as precise as we need so we need some tolerance
 	thresholds := []int64{1000 - 2, 1000 + 2}
 	if out < thresholds[0] || out > thresholds[1] {
 		t.Errorf("Want %d to be within [%d, %d]", out, thresholds[0], thresholds[1])
