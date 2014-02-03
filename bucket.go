@@ -8,7 +8,7 @@ import (
 // Bucket defines a generic lock-free implementation of a Token Bucket.
 type Bucket struct{ tokens int64 }
 
-// NewBucket returns a full empty Bucket with c capacity and asynchronously
+// NewBucket returns a full Bucket with c capacity and asynchronously
 // starts filling it c times per second.
 func NewBucket(c int64) *Bucket {
 	b := &Bucket{tokens: c}
