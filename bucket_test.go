@@ -81,3 +81,21 @@ func TestBucket_Take_throughput(t *testing.T) {
 		t.Errorf("Want %d to be within [%d, %d]", out, thresholds[0], thresholds[1])
 	}
 }
+
+func BenchmarkBucket_Take_sequential(b *testing.B) {
+	bucket := NewBucket(1000)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		bucket.Take(1)
+	}
+}
+
+func BenchmarkBucket_Take_concurrent(b *testing.B) {
+	bucket := NewBucket(1000)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		go bucket.Take(1)
+	}
+}
