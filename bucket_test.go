@@ -60,7 +60,7 @@ func TestBucket_Take_throughput(t *testing.T) {
 	}
 
 	// The time scheduler isn't as precise as we need so we need some tolerance
-	thresholds := []int64{1000 - 2, 1000 + 2}
+	thresholds := []int64{1000 - 50, 1000 + 50}
 	if out < thresholds[0] || out > thresholds[1] {
 		t.Errorf("Want %d to be within [%d, %d]", out, thresholds[0], thresholds[1])
 	}
