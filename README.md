@@ -11,10 +11,46 @@ Read more about it in this [Wikipedia page](http://en.wikipedia.org/wiki/Token_b
 $ go get github.com/tsenart/tb
 ```
 
-## Usage
+## Usage examples
+### Throttled writer
+Example of a ThrottledWriter which satisfies the io.Writer interface.
+It handles non-conformity by sleeping 1 second once the bucket is empty.
 ```go
-// An example of an echo server which throttles each remote ip to 10
-// connections per second.
+package main
+
+import (
+	"io"
+	"time"
+)
+
+type ThrottledWriter struct {
+	tb *Bucket
+	w  io.Writer
+}
+
+func NewThrottledWriter(rate int64, w io.Writer) io.Writer {
+	return &ThrottledWriter{NewBucket(rate), w}
+}
+
+func (tw *ThrottledWriter) Write(p []byte) (n int, err error) {
+	for wr := 0; wr < len(p); {
+		in := len(p) - wr
+		if out := tw.tb.Take(int64(in)); out == 0 {
+			time.Sleep(1 * time.Second)
+			continue
+		} else if n, err = tw.w.Write(p[wr : wr+int(out)]); err != nil {
+			return wr, err
+		}
+		wr += n
+	}
+	return len(p), nil
+}
+```
+
+### Echo server
+Example of an echo server which throttles client connections per remote
+IP address. It handles *non-conformity* by closing the connection.
+```go
 package main
 
 import (
