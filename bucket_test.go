@@ -74,3 +74,13 @@ func BenchmarkBucket_Take_sequential(b *testing.B) {
 		bucket.Take(1)
 	}
 }
+
+func TestBucket_Close(t *testing.T) {
+	b := NewBucket(10000)
+	b.Close()
+	b.Take(10000)
+	time.Sleep(10 * time.Millisecond)
+	if want, got := int64(0), b.Take(1); want != got {
+		t.Errorf("Want: %d Got: %d", want, got)
+	}
+}

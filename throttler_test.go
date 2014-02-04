@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func BenchmarkThrottle_allocs(b *testing.B) {
@@ -14,15 +15,18 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 		keys[i] = strconv.Itoa(i)
 	}
 
+	th := NewThrottler()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Throttle(keys[i%(len(keys)-1)], 1, 1000)
+		th.Throttle(keys[i%(len(keys)-1)], 1, 1000)
 	}
 }
 
 func BenchmarkThrottle_sequential(b *testing.B) {
+	th := NewThrottler()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Throttle("1", 1, 1000)
+		th.Throttle("1", 1, 1000)
 	}
 }
 
@@ -56,5 +60,19 @@ func ExampleThrottle(t *testing.T) {
 			log.Fatal(err)
 		}
 		go echo(conn)
+	}
+}
+
+func TestThrottler_Close(t *testing.T) {
+	th := NewThrottler()
+	for i := 0; i < 5; i++ {
+		th.Throttle(strconv.Itoa(i), 1000, 1000)
+	}
+	th.Close()
+	time.Sleep(1 * time.Millisecond)
+	for i := 0; i < 5; i++ {
+		if w, g := int64(0), th.Throttle(strconv.Itoa(i), 1, 1000); w != g {
+			t.Errorf("Want: %d Got: %d", w, g)
+		}
 	}
 }
