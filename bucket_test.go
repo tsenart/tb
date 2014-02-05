@@ -6,18 +6,11 @@ import (
 	"time"
 )
 
-func TestNewBucket(t *testing.T) {
-	t.Parallel()
-
-	if b := NewBucket(10); b.tokens != 10 {
-		t.Errorf("Wrong number of tokens. Want 10, Got %d", b.tokens)
-	}
-}
-
 func TestBucket_Take_single(t *testing.T) {
 	t.Parallel()
 
 	b := NewBucket(10)
+	defer b.Close()
 
 	ex := [...]int64{5, 5, 1, 1, 5, 4, 1, 0}
 	for i := 0; i < len(ex)-1; i += 2 {
@@ -31,6 +24,7 @@ func TestBucket_Take_multi(t *testing.T) {
 	t.Parallel()
 
 	b := NewBucket(10)
+	defer b.Close()
 
 	exs := [2][]int64{{4, 4, 2, 2}, {2, 2, 1, 1}}
 	for i := 0; i < 2; i++ {
@@ -51,6 +45,8 @@ func TestBucket_Take_throughput(t *testing.T) {
 	}
 
 	b := NewBucket(1000)
+	defer b.Close()
+
 	atomic.StoreInt64(&b.tokens, 0)
 
 	var out int64
@@ -68,6 +64,7 @@ func TestBucket_Take_throughput(t *testing.T) {
 
 func BenchmarkBucket_Take_sequential(b *testing.B) {
 	bucket := NewBucket(1000)
+	defer bucket.Close()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

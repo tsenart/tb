@@ -16,6 +16,8 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 	}
 
 	th := NewThrottler()
+	defer th.Close()
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		th.Throttle(keys[i%(len(keys)-1)], 1, 1000)
@@ -24,6 +26,8 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 
 func BenchmarkThrottle_sequential(b *testing.B) {
 	th := NewThrottler()
+	defer th.Close()
+
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		th.Throttle("1", 1, 1000)
@@ -36,6 +40,7 @@ func ExampleThrottle(t *testing.T) {
 		log.Fatal(err)
 	}
 	th := NewThrottler()
+	defer th.Close()
 
 	echo := func(conn net.Conn) {
 		defer conn.Close()
