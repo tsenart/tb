@@ -12,8 +12,7 @@ $ go get github.com/tsenart/tb
 ```
 
 ## Usage
-Read up the docs [![GoDoc](https://godoc.org/github.com/tsenart/tb?status.png)](https://godoc.org/github.com/tsenart/tb)
-Look at some [examples](examples/)
+Read up the [docs](https://godoc.org/github.com/tsenart/tb) and have a look at some [examples](examples/).
 
 ## Licence
 ```
