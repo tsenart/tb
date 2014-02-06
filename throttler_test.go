@@ -9,6 +9,66 @@ import (
 	"time"
 )
 
+func TestThrottler_Bucket(t *testing.T) {
+	t.Parallel()
+
+	th := NewThrottler(0)
+	defer th.Close()
+
+	b := th.Bucket("a", 1000)
+
+	ex := [...]int64{100, 100, 1000, 900, 1, 0}
+	for i := 0; i < len(ex)-1; i += 2 {
+		if got, want := b.Take(ex[i]), ex[i+1]; got != want {
+			t.Errorf("Want: %d, Got: %d", want, got)
+		}
+	}
+
+	for i := 0; i < len(ex)-1; i += 2 {
+		if got, want := b.Put(ex[i]), ex[i+1]; got != want {
+			t.Errorf("Want: %d, Got: %d", want, got)
+		}
+	}
+}
+
+func TestThrottler_Halt(t *testing.T) {
+	t.Parallel()
+
+	th := NewThrottler(0)
+	defer th.Close()
+
+	if th.Halt("a", 1000, 1000) {
+		t.Fatal("Didn't expect halt")
+	}
+
+	if !th.Halt("a", 1, 1000) {
+		t.Fatal("Expected halt")
+	}
+
+	if th.Halt("b", 1000, 1000) {
+		t.Fatal("Didn't expect halt")
+	}
+}
+
+func TestThrottler_Wait(t *testing.T) {
+	t.Parallel()
+
+	th := NewThrottler(1 * time.Millisecond)
+	defer th.Close()
+
+	if _, waited := th.Wait("a", 1000, 1000); waited {
+		t.Fatal("Didn't expect wait")
+	}
+
+	if took, waited := th.Wait("a", 1000, 1000); !waited || int(took.Seconds()) != 1 {
+		t.Fatalf("Expected wait of 1s. Got: %s", took)
+	}
+
+	if _, waited := th.Wait("b", 1000, 1000); waited {
+		t.Fatal("Didn't expect wait")
+	}
+}
+
 func BenchmarkThrottler_Bucket(b *testing.B) {
 	keys := make([]string, 10000)
 	for i := 0; i < len(keys); i++ {

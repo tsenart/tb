@@ -70,7 +70,7 @@ func TestBucket_Put_multi(t *testing.T) {
 	b := NewBucket(10, 0)
 	defer b.Close()
 
-  b.Take(10)
+	b.Take(10)
 
 	exs := [2][]int64{{4, 4, 2, 2}, {2, 2, 1, 1}}
 	for i := 0; i < 2; i++ {
@@ -122,7 +122,7 @@ func BenchmarkBucket_Put_sequential(b *testing.B) {
 	bucket := NewBucket(int64(b.N), 0)
 	defer bucket.Close()
 
-  bucket.Take(int64(b.N))
+	bucket.Take(int64(b.N))
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
