@@ -11,15 +11,8 @@ import (
 type Throttler struct {
 	mu      sync.RWMutex
 	hz      time.Duration
-	buckets bucketMap
+	buckets map[string]*Bucket
 	closing chan struct{}
-}
-
-// bucketMap is a map of strings to buckets and their cached
-// token increments per tick
-type bucketMap map[string]struct {
-	*Bucket
-	inc int64
 }
 
 // NewThrottler returns a Throttler with a single filler go-routine for all
@@ -31,7 +24,7 @@ type bucketMap map[string]struct {
 func NewThrottler(hz time.Duration) *Throttler {
 	th := &Throttler{
 		hz:      hz,
-		buckets: bucketMap{},
+		buckets: map[string]*Bucket{},
 		closing: make(chan struct{}),
 	}
 
@@ -42,34 +35,87 @@ func NewThrottler(hz time.Duration) *Throttler {
 	return th
 }
 
-// Throttle throttles a quantity 'in' to the specified 'rate' per second,
-// with a Bucket keyed by key, returning the permitted quantity.
-// This method is thread-safe, locks are used only to synchronize access to
-// the bucket map.
+// Bucket returns a Bucket with rate capacity, keyed by key.
 //
-// If hz < 1/rate seconds, the effective throttling rate won't be correct.
+// If a Bucket (key, rate) doesn't exist yet, it is created.
 //
 // You must call Close when you're done with the Throttler in order to not leak
 // a go-routine and a system-timer.
-func (t *Throttler) Throttle(key string, in, rate int64) (out int64) {
+func (t *Throttler) Bucket(key string, rate int64) *Bucket {
 	t.mu.RLock()
 	b, ok := t.buckets[key]
 	t.mu.RUnlock()
 
 	if !ok {
-		b.Bucket = NewBucket(rate, 0)
+		b = NewBucket(rate, 0)
 		b.inc = int64(math.Floor(.5 + (float64(b.capacity) * t.hz.Seconds())))
 		t.mu.Lock()
 		t.buckets[key] = b
 		t.mu.Unlock()
 	}
 
-	return b.Take(in)
+	return b
 }
 
-// Close stops filling the Buckets
+// Wait waits for n amount of tokens to be available, sleeping hz between each
+// take. It returns the wait duration and whether it had to wait or not.
+//
+// If a Bucket (key, rate) doesn't exist yet, it is created.
+// If hz < 1/rate seconds, the effective wait rate won't be correct.
+//
+// You must call Close when you're done with the Throttler in order to not leak
+// a go-routine and a system-timer.
+func (t *Throttler) Wait(key string, n, rate int64) (time.Duration, bool) {
+	var (
+		got   int64
+		began = time.Now()
+	)
+
+	b := t.Bucket(key, rate)
+
+	if got = b.Take(n); got == n {
+		return time.Since(began), false
+	}
+
+	for got < n {
+		got += b.Take(n - got)
+		time.Sleep(t.hz)
+	}
+
+	return time.Since(began), true
+}
+
+// Halt returns a bool indicating if the Bucket identified by key and rate has
+// n amount of tokens. If it doesn't, the taken tokens are added back to the
+// bucket.
+//
+// If a Bucket (key, rate) doesn't exist yet, it is created.
+// If hz < 1/rate seconds, the results won't be correct.
+//
+// You must call Close when you're done with the Throttler in order to not leak
+// a go-routine and a system-timer.
+func (t *Throttler) Halt(key string, n, rate int64) bool {
+	b := t.Bucket(key, rate)
+
+	if got := b.Take(n); got != n {
+		b.Put(got)
+		return true
+	}
+
+	return false
+}
+
+// Close stops filling the Buckets, closing the filling go-routine.
 func (t *Throttler) Close() error {
 	close(t.closing)
+
+	t.mu.RLock()
+	defer t.mu.RUnlock()
+
+	for _, b := range t.buckets {
+		b.Close()
+	}
+
 	return nil
 }
 

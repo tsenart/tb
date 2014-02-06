@@ -8,6 +8,7 @@ import (
 
 // Bucket defines a generic lock-free implementation of a Token Bucket.
 type Bucket struct {
+	inc      int64
 	tokens   int64
 	capacity int64
 	closing  chan struct{}
@@ -85,14 +86,14 @@ func (b *Bucket) fill(hz time.Duration) {
 	ticker := time.NewTicker(hz)
 	defer ticker.Stop()
 
-	inc := int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
+	b.inc = int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
 
 	for _ = range ticker.C {
 		select {
 		case <-b.closing:
 			return
 		default:
-			b.Put(inc)
+			b.Put(b.inc)
 		}
 	}
 }
