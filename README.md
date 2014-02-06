@@ -29,7 +29,7 @@ type ThrottledWriter struct {
 }
 
 func NewThrottledWriter(rate int64, w io.Writer) io.Writer {
-	return &ThrottledWriter{NewBucket(rate), w}
+	return &ThrottledWriter{NewBucket(rate, -1), w}
 }
 
 func (tw *ThrottledWriter) Write(p []byte) (n int, err error) {
@@ -65,7 +65,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	th := tb.NewThrottler()
+	th := tb.NewThrottler(100 * time.Millisecond)
 
 	echo := func(conn net.Conn) {
 		defer conn.Close()

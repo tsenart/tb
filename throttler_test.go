@@ -15,7 +15,7 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 		keys[i] = strconv.Itoa(i)
 	}
 
-	th := NewThrottler()
+	th := NewThrottler(1 * time.Millisecond)
 	defer th.Close()
 
 	b.ResetTimer()
@@ -25,7 +25,7 @@ func BenchmarkThrottle_allocs(b *testing.B) {
 }
 
 func BenchmarkThrottle_sequential(b *testing.B) {
-	th := NewThrottler()
+	th := NewThrottler(1 * time.Millisecond)
 	defer th.Close()
 
 	b.ResetTimer()
@@ -39,7 +39,7 @@ func ExampleThrottle(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	th := NewThrottler()
+	th := NewThrottler(100 * time.Millisecond)
 	defer th.Close()
 
 	echo := func(conn net.Conn) {
@@ -69,7 +69,7 @@ func ExampleThrottle(t *testing.T) {
 }
 
 func TestThrottler_Close(t *testing.T) {
-	th := NewThrottler()
+	th := NewThrottler(1 * time.Millisecond)
 	for i := 0; i < 5; i++ {
 		th.Throttle(strconv.Itoa(i), 1000, 1000)
 	}

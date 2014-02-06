@@ -1,29 +1,42 @@
 package tb
 
 import (
+	"math"
 	"sync/atomic"
 	"time"
 )
 
 // Bucket defines a generic lock-free implementation of a Token Bucket.
 type Bucket struct {
-	tokens  int64
-	closing chan struct{}
+	tokens   int64
+	capacity int64
+	closing  chan struct{}
 }
 
-// NewBucket returns a full Bucket with c capacity and asynchronously
-// starts filling it c times per second. You must call Close when you're done
-// with the Bucket in order to not leak a go-routine and a system timer.
-func NewBucket(c int64) *Bucket {
-	b := &Bucket{tokens: c, closing: make(chan struct{})}
-	go b.fill(c)
+// NewBucket returns a full Bucket with c capacity and starts a filling
+// go-routine which ticks every hz. The number of tokens added on each tick
+// is computed dynamically to be even across the duration of a second.
+//
+// If hz == -1 then it will be adjusted to 1/c seconds. Otherwise,
+// If hz < 1/c seconds, the filling go-routine won't be started.
+func NewBucket(c int64, hz time.Duration) *Bucket {
+	b := &Bucket{tokens: c, capacity: c, closing: make(chan struct{})}
+
+	if hz == -1 {
+		hz = time.Duration(1e9 / c)
+	} else if hz.Seconds() < 1/float64(c) {
+		return b
+	}
+
+	go b.fill(hz)
+
 	return b
 }
 
-// Take will attempt to take n tokens out of the bucket.
-// If available tokens == 0, nothing will be taken.
-// If n <= available tokens, n tokens will be taken.
-// If n > available tokens, all available tokens will be taken.
+// Take attempts to take n tokens out of the bucket.
+// If tokens == 0, nothing will be taken.
+// If n <= tokens, n tokens will be taken.
+// If n > tokens, all tokens will be taken.
 //
 // This method is thread-safe.
 func (b *Bucket) Take(n int64) (taken int64) {
@@ -41,25 +54,45 @@ func (b *Bucket) Take(n int64) (taken int64) {
 	}
 }
 
-// Close halts filling the bucket with tokens and finishes execution of the
-// respective go-routine.
+// Put attempts to add n tokens to the bucket.
+// If tokens == capacity, nothing will be added.
+// If n <= capacity - tokens, n tokens will be added.
+// If n > capacity - tokens, capacity - tokens will be added.
+//
+// This method is thread-safe.
+func (b *Bucket) Put(n int64) (added int64) {
+	for {
+		if tokens := atomic.LoadInt64(&b.tokens); tokens == b.capacity {
+			return 0
+		} else if left := b.capacity - tokens; n <= left {
+			if !atomic.CompareAndSwapInt64(&b.tokens, tokens, tokens+n) {
+				continue
+			}
+			return n
+		} else if atomic.CompareAndSwapInt64(&b.tokens, tokens, b.capacity) {
+			return left
+		}
+	}
+}
+
+// Close stops the filling go-routine given it was started.
 func (b *Bucket) Close() error {
 	close(b.closing)
 	return nil
 }
 
-func (b *Bucket) fill(capacity int64) {
-	ticker := time.NewTicker(time.Duration(1e9 / capacity))
+func (b *Bucket) fill(hz time.Duration) {
+	ticker := time.NewTicker(hz)
 	defer ticker.Stop()
-	for {
+
+	tokens := int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
+
+	for _ = range ticker.C {
 		select {
-		case <-ticker.C:
-			if atomic.LoadInt64(&b.tokens) < capacity {
-				atomic.AddInt64(&b.tokens, 1)
-			}
 		case <-b.closing:
 			return
 		default:
+			b.Put(tokens)
 		}
 	}
 }
