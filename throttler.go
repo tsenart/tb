@@ -10,8 +10,16 @@ import (
 // use API for generic throttling.
 type Throttler struct {
 	mu      sync.RWMutex
-	buckets map[string]*Bucket
+	hz      time.Duration
+	buckets bucketMap
 	closing chan struct{}
+}
+
+// bucketMap is a map of strings to buckets and their cached
+// token increments per tick
+type bucketMap map[string]struct {
+	*Bucket
+	inc int64
 }
 
 // NewThrottler returns a Throttler with a single filler go-routine for all
@@ -22,7 +30,8 @@ type Throttler struct {
 // If hz <= 0, the filling go-routine won't be started.
 func NewThrottler(hz time.Duration) *Throttler {
 	th := &Throttler{
-		buckets: map[string]*Bucket{},
+		hz:      hz,
+		buckets: bucketMap{},
 		closing: make(chan struct{}),
 	}
 
@@ -44,11 +53,12 @@ func NewThrottler(hz time.Duration) *Throttler {
 // a go-routine and a system-timer.
 func (t *Throttler) Throttle(key string, in, rate int64) (out int64) {
 	t.mu.RLock()
-	b := t.buckets[key]
+	b, ok := t.buckets[key]
 	t.mu.RUnlock()
 
-	if b == nil {
-		b = NewBucket(rate, 0)
+	if !ok {
+		b.Bucket = NewBucket(rate, 0)
+		b.inc = int64(math.Floor(.5 + (float64(b.capacity) * t.hz.Seconds())))
 		t.mu.Lock()
 		t.buckets[key] = b
 		t.mu.Unlock()
@@ -75,7 +85,7 @@ func (t Throttler) fill(hz time.Duration) {
 		}
 		t.mu.RLock()
 		for _, b := range t.buckets {
-			b.Put(int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds()))))
+			b.Put(b.inc)
 		}
 		t.mu.RUnlock()
 	}

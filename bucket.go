@@ -85,14 +85,14 @@ func (b *Bucket) fill(hz time.Duration) {
 	ticker := time.NewTicker(hz)
 	defer ticker.Stop()
 
-	tokens := int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
+	inc := int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
 
 	for _ = range ticker.C {
 		select {
 		case <-b.closing:
 			return
 		default:
-			b.Put(tokens)
+			b.Put(inc)
 		}
 	}
 }
