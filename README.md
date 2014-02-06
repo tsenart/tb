@@ -76,7 +76,7 @@ func main() {
 		}
 		// Throttle to 10 connection per second from the same host
 		// Handle non-conformity by dropping the connection
-		if out := th.Throttle(host, 1, 10); out < 1 {
+		if th.Halt(host, 1, 10) {
 			log.Printf("Throttled %s", host)
 			return
 		}
