@@ -10,26 +10,26 @@ import (
 // use API for generic throttling.
 type Throttler struct {
 	mu      sync.RWMutex
-	hz      time.Duration
+	freq    time.Duration
 	buckets map[string]*Bucket
 	closing chan struct{}
 }
 
 // NewThrottler returns a Throttler with a single filler go-routine for all
-// its Buckets which ticks every hz.
+// its Buckets which ticks every freq.
 // The number of tokens added on each tick for each bucket is computed
 // dynamically to be even accross the duration of a second.
 //
-// If hz <= 0, the filling go-routine won't be started.
-func NewThrottler(hz time.Duration) *Throttler {
+// If freq <= 0, the filling go-routine won't be started.
+func NewThrottler(freq time.Duration) *Throttler {
 	th := &Throttler{
-		hz:      hz,
+		freq:    freq,
 		buckets: map[string]*Bucket{},
 		closing: make(chan struct{}),
 	}
 
-	if hz > 0 {
-		go th.fill(hz)
+	if freq > 0 {
+		go th.fill(freq)
 	}
 
 	return th
@@ -48,7 +48,7 @@ func (t *Throttler) Bucket(key string, rate int64) *Bucket {
 
 	if !ok {
 		b = NewBucket(rate, 0)
-		b.inc = int64(math.Floor(.5 + (float64(b.capacity) * t.hz.Seconds())))
+		b.inc = int64(math.Floor(.5 + (float64(b.capacity) * t.freq.Seconds())))
 		t.mu.Lock()
 		t.buckets[key] = b
 		t.mu.Unlock()
@@ -57,11 +57,11 @@ func (t *Throttler) Bucket(key string, rate int64) *Bucket {
 	return b
 }
 
-// Wait waits for n amount of tokens to be available, sleeping hz between each
+// Wait waits for n amount of tokens to be available, sleeping freq between each
 // take. It returns the wait duration and whether it had to wait or not.
 //
 // If a Bucket (key, rate) doesn't exist yet, it is created.
-// If hz < 1/rate seconds, the effective wait rate won't be correct.
+// If freq < 1/rate seconds, the effective wait rate won't be correct.
 //
 // You must call Close when you're done with the Throttler in order to not leak
 // a go-routine and a system-timer.
@@ -79,7 +79,7 @@ func (t *Throttler) Wait(key string, n, rate int64) (time.Duration, bool) {
 
 	for got < n {
 		got += b.Take(n - got)
-		time.Sleep(t.hz)
+		time.Sleep(t.freq)
 	}
 
 	return time.Since(began), true
@@ -90,7 +90,7 @@ func (t *Throttler) Wait(key string, n, rate int64) (time.Duration, bool) {
 // bucket.
 //
 // If a Bucket (key, rate) doesn't exist yet, it is created.
-// If hz < 1/rate seconds, the results won't be correct.
+// If freq < 1/rate seconds, the results won't be correct.
 //
 // You must call Close when you're done with the Throttler in order to not leak
 // a go-routine and a system-timer.
@@ -119,8 +119,8 @@ func (t *Throttler) Close() error {
 	return nil
 }
 
-func (t Throttler) fill(hz time.Duration) {
-	ticker := time.NewTicker(hz)
+func (t Throttler) fill(freq time.Duration) {
+	ticker := time.NewTicker(freq)
 	defer ticker.Stop()
 
 	for _ = range ticker.C {

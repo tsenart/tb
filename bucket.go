@@ -15,21 +15,21 @@ type Bucket struct {
 }
 
 // NewBucket returns a full Bucket with c capacity and starts a filling
-// go-routine which ticks every hz. The number of tokens added on each tick
+// go-routine which ticks every freq. The number of tokens added on each tick
 // is computed dynamically to be even across the duration of a second.
 //
-// If hz == -1 then it will be adjusted to 1/c seconds. Otherwise,
-// If hz < 1/c seconds, the filling go-routine won't be started.
-func NewBucket(c int64, hz time.Duration) *Bucket {
+// If freq == -1 then it will be adjusted to 1/c seconds. Otherwise,
+// If freq < 1/c seconds, the filling go-routine won't be started.
+func NewBucket(c int64, freq time.Duration) *Bucket {
 	b := &Bucket{tokens: c, capacity: c, closing: make(chan struct{})}
 
-	if hz == -1 {
-		hz = time.Duration(1e9 / c)
-	} else if hz.Seconds() < 1/float64(c) {
+	if freq == -1 {
+		freq = time.Duration(1e9 / c)
+	} else if freq.Seconds() < 1/float64(c) {
 		return b
 	}
 
-	go b.fill(hz)
+	go b.fill(freq)
 
 	return b
 }
@@ -82,11 +82,11 @@ func (b *Bucket) Close() error {
 	return nil
 }
 
-func (b *Bucket) fill(hz time.Duration) {
-	ticker := time.NewTicker(hz)
+func (b *Bucket) fill(freq time.Duration) {
+	ticker := time.NewTicker(freq)
 	defer ticker.Stop()
 
-	b.inc = int64(math.Floor(.5 + (float64(b.capacity) * hz.Seconds())))
+	b.inc = int64(math.Floor(.5 + (float64(b.capacity) * freq.Seconds())))
 
 	for _ = range ticker.C {
 		select {

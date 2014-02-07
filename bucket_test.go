@@ -12,7 +12,7 @@ func TestNewBucket(t *testing.T) {
 	b.Take(10)
 	time.Sleep(100 * time.Millisecond)
 	if w, g := int64(0), b.Take(1); w != g {
-		t.Fatal("Expected no filling when hz < 1/c")
+		t.Fatal("Expected no filling when freq < 1/c")
 	}
 }
 
