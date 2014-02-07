@@ -7,8 +7,6 @@ algorithm where the handling of non-conformity is left to the user.
 > The token bucket is an algorithm used in packet switched computer networks and telecommunications networks. It can be used to check that data transmissions, in the form of packets, conform to defined limits on bandwidth and burstiness (a measure of the unevenness or variations in the traffic flow)
 -- <cite>[Wikipedia](http://en.wikipedia.org/wiki/Token_bucket)</cite>
 
-![Image](https://dl.dropboxusercontent.com/u/83217940/bucket.gif)
-
 This implementation of the token bucket generalises its applications beyond packet rate conformance. Hence, the word *generic*. You can use it to throttle any flow as long as it can be split into parts which can be expressed as a number (bytes/s, requests/s, messages/s, packets/s, potatoes/s, heartbeats/s, etc...)
 
 The *lock-free* part of the description refers to the lock-free programming techniques (CAS loop) used in the core `Bucket` methods (`Take` and `Put`). [Here is](http://preshing.com/20120612/an-introduction-to-lock-free-programming/) a good overview of lock-free programming you can refer to.
