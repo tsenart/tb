@@ -2,7 +2,13 @@
 
 This package provides a generic lock-free implementation of the "Token bucket"
 algorithm where the handling of non-conformity is left to the user.
-Read more about it in this [Wikipedia page](http://en.wikipedia.org/wiki/Token_bucket).
+
+*In other words*, this ought to be your one stop shop for all things **throttling** in Go.
+All utility pacakges such as [http](http/) and [io](io/) are just wrappers around the core package.
+
+
+If you want to understand the core algorithm read more about it in this [Wikipedia page](http://en.wikipedia.org/wiki/Token_bucket).
+
 ![Image](http://sardes.inrialpes.fr/~krakowia/MW-Book/Chapters/QoS/Chapters/QoS/Figs/bucket.gif)
 
 
