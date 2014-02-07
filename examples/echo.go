@@ -1,11 +1,11 @@
 package examples
 
 import (
-  "github.com/tsenart/tb"
-  "io"
-  "log"
-  "net"
-  "time"
+	"github.com/tsenart/tb"
+	"io"
+	"log"
+	"net"
+	"time"
 )
 
 func main() {
