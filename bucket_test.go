@@ -105,7 +105,7 @@ func TestBucket_Take_throughput(t *testing.T) {
 
 	ended := time.Since(began)
 	if int(ended.Seconds()) != 1 {
-		t.Errorf("Want 1000 tokens to take 1s. Got: %s", int(ended.Seconds()))
+		t.Errorf("Want 1000 tokens to take 1s. Got: %d", int(ended.Seconds()))
 	}
 }
 
