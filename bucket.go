@@ -20,7 +20,7 @@ type Bucket struct {
 // is computed dynamically to be even across the duration of a second.
 //
 // If freq == -1 then the filling go-routine won't be started. Otherwise,
-// If freq < 1/c seconds, then it will be adjusted to 1/c seconds. Otherwise,
+// If freq < 1/c seconds, then it will be adjusted to 1/c seconds.
 func NewBucket(c int64, freq time.Duration) *Bucket {
 	b := &Bucket{tokens: c, capacity: c, closing: make(chan struct{})}
 
