@@ -87,18 +87,20 @@ func (b *Bucket) Put(n int64) (added int64) {
 //
 // This method is thread-safe.
 func (b *Bucket) Wait(n int64) time.Duration {
-	var rem int64
-	if rem = n - b.Take(n); rem == 0 {
-		return 0
-	}
+	_, w := b.wait(n, 0)
+	return w
+}
 
-	var wait time.Duration
-	for rem > 0 {
-		wait += b.wait(rem)
-		time.Sleep(wait)
-		rem -= b.Take(rem)
-	}
-	return wait
+// WaitTimeout waits for n amount of tokens to be available before t time has
+// elapsed.
+// If n tokens are immediatelly available it doesn't sleep.
+// Otherwise, it sleeps the minimum amount of time required for the remaining
+// tokens to be available or it times out after t duration has elapsed.
+// It returns the amount of tokens taken and the wait duration.
+//
+// This method is thread-safe.
+func (b *Bucket) WaitTimeout(n int64, t time.Duration) (int64, time.Duration) {
+	return b.wait(n, t)
 }
 
 // Close stops the filling go-routine given it was started.
@@ -107,9 +109,35 @@ func (b *Bucket) Close() error {
 	return nil
 }
 
-// wait returns the minimum amount of time required for n tokens to be available.
-// if n > capacity, n will be adjusted to capacity
-func (b *Bucket) wait(n int64) time.Duration {
+func (b *Bucket) wait(n int64, t time.Duration) (int64, time.Duration) {
+	timeout := make(<-chan time.Time)
+	if t > 0 {
+		timeout = time.After(t)
+	}
+
+	var rem int64
+	if rem = n - b.Take(n); rem == 0 {
+		return n, 0
+	}
+
+	var wait, total time.Duration
+	for rem > 0 {
+		wait = b.minWait(rem)
+		select {
+		case <-time.After(wait):
+			total += wait
+			rem -= b.Take(rem)
+		case <-timeout:
+			return n - rem, t
+		}
+	}
+
+	return n - rem, total
+}
+
+// minWait returns the minimum amount of time required for
+// n tokens to be available. if n > capacity, n will be adjusted to capacity
+func (b *Bucket) minWait(n int64) time.Duration {
 	return time.Duration(int64(math.Ceil(math.Min(float64(n), float64(b.capacity))/float64(b.inc))) *
 		b.freq.Nanoseconds())
 }

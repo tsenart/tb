@@ -169,6 +169,37 @@ func TestBucket_Wait(t *testing.T) {
 	}
 }
 
+func TestBucket_WaitTimeout(t *testing.T) {
+	t.Parallel()
+
+	type params struct {
+		n int64
+		t time.Duration
+	}
+
+	cases := map[params]params{
+		params{2000, 20 * time.Millisecond}: {1000, 20 * time.Millisecond},
+		params{2000, 3 * time.Second}:       {2000, 1 * time.Second},
+		params{2000, 0}:                     {2000, 1 * time.Second},
+		params{1000, 0}:                     {1000, 0},
+	}
+
+	for in, out := range cases {
+		freq := 200 * time.Millisecond
+		bucket := NewBucket(1e3, freq)
+		defer bucket.Close()
+
+		n, wait := bucket.WaitTimeout(in.n, in.t)
+		// The system timer isn't precise enough so have some tolerance.
+		if n != out.n || wait < out.t || wait > out.t+freq {
+			t.Fatalf(
+				"bucket.WaitTimeout(%d, %s) with cap=%d, freq=%s: Want: (%d, [%s, %s], Got: (%d, %s)",
+				in.n, in.t, bucket.capacity, bucket.freq, out.n, out.t, out.t+freq, n, wait,
+			)
+		}
+	}
+}
+
 func TestBucket_Close(t *testing.T) {
 	b := NewBucket(10000, 0)
 	b.Close()
