@@ -81,7 +81,7 @@ func (b *Bucket) Put(n int64) (added int64) {
 }
 
 // Wait waits for n amount of tokens to be available.
-// If n tokens are immediatelly available it doesn't sleep.
+// If n tokens are immediately available it doesn't sleep.
 // Otherwise, it sleeps the minimum amount of time required for the remaining
 // tokens to be available. It returns the wait duration.
 //
