@@ -28,7 +28,7 @@ Read up the [docs](https://godoc.org/github.com/tsenart/tb) and have a look at s
 ```
 The MIT License (MIT)
 
-Copyright (c) 2014 Tomás Senart
+Copyright (c) 2014-2015 Tomás Senart
 
 Permission is hereby granted, free of charge, to any person obtaining a copy of
 this software and associated documentation files (the "Software"), to deal in
